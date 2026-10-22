@@ -1,0 +1,633 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Analytics – RFM Segmentation</title>
+<style>
+  :root {
+    --primary: #6366F1;
+    --primary-dark: #4F46E5;
+    --primary-light: #EEF2FF;
+    --surface: #FFFFFF;
+    --surface-2: #F8FAFC;
+    --surface-3: #F1F5F9;
+    --border: #E2E8F0;
+    --text: #0F172A;
+    --text-2: #475569;
+    --text-3: #94A3B8;
+    --green: #10B981;
+    --green-bg: #ECFDF5;
+    --amber: #F59E0B;
+    --amber-bg: #FFFBEB;
+    --red: #EF4444;
+    --red-bg: #FEF2F2;
+    --blue: #3B82F6;
+    --blue-bg: #EFF6FF;
+    --purple: #8B5CF6;
+    --purple-bg: #F5F3FF;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.1);
+    --transition: all .2s ease;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.7; color: var(--text); background: var(--surface-2); }
+
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 clamp(16px, 4vw, 48px);
+  }
+  .nav-inner { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; gap: 4px; overflow-x: auto; height: 52px; }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  nav a { font-size: 13px; font-weight: 500; color: var(--text-2); text-decoration: none; white-space: nowrap; padding: 6px 12px; border-radius: 20px; transition: var(--transition); }
+  nav a:hover { color: var(--primary); background: var(--primary-light); }
+  nav a.active { color: var(--primary); background: var(--primary-light); }
+  .nav-logo { font-weight: 700; font-size: 14px; color: var(--primary); margin-right: 8px; white-space: nowrap; }
+
+  .hero {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #2563EB 100%);
+    color: white; padding: clamp(48px, 8vw, 96px) clamp(16px, 4vw, 48px);
+  }
+  .hero-inner { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 16px; }
+  .hero h1 { font-size: clamp(28px, 4vw, 52px); font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+  .hero p { font-size: clamp(15px, 1.5vw, 18px); opacity: .88; max-width: 640px; }
+  .hero-stat { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius); padding: 24px 32px; text-align: center; min-width: 160px; }
+  .hero-stat .num { font-size: 36px; font-weight: 800; }
+  .hero-stat .lbl { font-size: 12px; opacity: .8; margin-top: 4px; }
+
+  main { max-width: 1440px; margin: 0 auto; padding: clamp(32px, 5vw, 64px) clamp(16px, 4vw, 48px); }
+  section { margin-bottom: 72px; scroll-margin-top: 64px; }
+  h2 { font-size: clamp(20px, 2.5vw, 28px); font-weight: 700; margin-bottom: 8px; }
+  h3 { font-size: clamp(16px, 1.8vw, 20px); font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  p { color: var(--text-2); margin-bottom: 16px; }
+  .section-intro { font-size: 17px; color: var(--text-2); max-width: 800px; margin-bottom: 32px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .card-grid { display: grid; gap: 20px; }
+  .card-grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card-grid-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card-grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  /* Context box */
+  .context-box { background: linear-gradient(135deg, #EEF2FF, #F5F3FF); border: 1px solid #C7D2FE; border-radius: var(--radius); padding: 28px 32px; margin-bottom: 32px; position: relative; overflow: hidden; }
+  .context-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
+  .context-box h3 { color: var(--primary-dark); margin-bottom: 8px; }
+  .context-box p { color: #3730A3; margin: 0; }
+
+  /* CRM pillars */
+  .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .pillar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: center; }
+  .pillar-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 12px; }
+  .pillar h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .pillar p { font-size: 13px; color: var(--text-2); margin: 0; }
+
+  /* Segmentation types */
+  .seg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .seg-card { border-radius: var(--radius); padding: 20px 24px; border: 1px solid transparent; }
+  .seg-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .seg-card p { font-size: 13px; margin: 0; }
+
+  /* RFM trio */
+  .rfm-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .rfm-cell { padding: 28px 24px; text-align: center; }
+  .rfm-cell:not(:last-child) { border-right: 1px solid var(--border); }
+  .rfm-letter { font-size: 64px; font-weight: 900; line-height: 1; margin-bottom: 8px; }
+  .rfm-cell h3 { font-size: 18px; margin-bottom: 6px; }
+  .rfm-cell p { font-size: 13px; color: var(--text-2); margin: 0; }
+  .rfm-arrow { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-top: 10px; display: inline-block; }
+
+  /* Formula block */
+  .formula-block { background: #0F172A; color: #E2E8F0; border-radius: var(--radius); padding: 24px 28px; font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace; font-size: 14px; line-height: 1.8; overflow-x: auto; }
+  .formula-comment { color: #64748B; }
+  .formula-fn { color: #A78BFA; }
+  .formula-str { color: #34D399; }
+  .formula-num { color: #FB923C; }
+  .formula-key { color: #60A5FA; }
+
+  /* Step pipeline */
+  .pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+  .pipe-step { padding: 20px 16px; text-align: center; position: relative; }
+  .pipe-step:not(:last-child)::after { content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--text-3); z-index: 1; }
+  .pipe-step:not(:last-child) { border-right: 1px solid var(--border); }
+  .pipe-num { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+  .pipe-step h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .pipe-step p { font-size: 11px; color: var(--text-3); margin: 0; }
+
+  /* Score direction badge */
+  .direction-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-top: 6px; }
+  .dir-good { background: #ECFDF5; color: #059669; }
+  .dir-bad { background: #FEF2F2; color: #DC2626; }
+
+  /* Segment table */
+  .seg-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: var(--primary); color: white; }
+  thead th { padding: 12px 16px; text-align: left; font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--surface-2); }
+  tbody td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text-2); }
+  tbody td:first-child { font-weight: 700; color: var(--text); font-family: monospace; font-size: 15px; }
+  .seg-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+  /* Amazon use case cards */
+  .amazon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .amazon-card { border-radius: var(--radius); border: 1px solid transparent; padding: 20px 24px; }
+  .amazon-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .amazon-card ul { padding-left: 18px; }
+  .amazon-card li { font-size: 13px; color: var(--text-2); margin-bottom: 5px; }
+
+  /* Quiz */
+  .quiz-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .quiz-question { font-size: 16px; font-weight: 600; margin-bottom: 18px; color: var(--text); }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; cursor: pointer; font-size: 14px; color: var(--text-2); transition: var(--transition); display: flex; align-items: flex-start; gap: 10px; }
+  .quiz-opt:hover { border-color: var(--primary); color: var(--primary); }
+  .quiz-opt .opt-key { font-weight: 700; min-width: 20px; }
+  .quiz-opt.correct { border-color: var(--green); background: var(--green-bg); color: #065F46; }
+  .quiz-opt.wrong { border-color: var(--red); background: var(--red-bg); color: #991B1B; }
+  .quiz-explanation { margin-top: 16px; padding: 14px 18px; background: var(--surface-2); border-radius: var(--radius-sm); font-size: 14px; color: var(--text-2); display: none; border-left: 3px solid var(--primary); }
+  .quiz-explanation.show { display: block; }
+
+  /* Key takeaway box */
+  .takeaway { background: var(--amber-bg); border: 1px solid #FDE68A; border-radius: var(--radius); padding: 20px 24px; }
+  .takeaway h4 { font-size: 14px; font-weight: 700; color: #92400E; margin-bottom: 6px; }
+  .takeaway p { font-size: 14px; color: #78350F; margin: 0; }
+
+  /* Viz tool link */
+  .viz-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--primary); color: white; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; text-decoration: none; transition: var(--transition); }
+  .viz-link:hover { background: var(--primary-dark); }
+
+  /* Summary grid */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .summary-card .s-num { font-size: 32px; font-weight: 800; color: var(--primary); line-height: 1; margin-bottom: 6px; }
+  .summary-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .summary-card p { font-size: 13px; color: var(--text-2); margin: 0; }
+
+  img.section-img { width: 100%; max-width: 720px; border-radius: var(--radius); border: 1px solid var(--border); display: block; margin: 20px 0; }
+
+  @media (max-width: 700px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .hero-stat { display: none; }
+    .rfm-trio { grid-template-columns: 1fr; }
+    .rfm-cell:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+    .pipe-step:not(:last-child)::after { display: none; }
+    .pipe-step:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+    .pipeline { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <span class="nav-logo">Lecture 8</span>
+    <a href="#scene">Scene</a>
+    <a href="#crm">CRM</a>
+    <a href="#segmentation">Segmentation</a>
+    <a href="#rfm">RFM</a>
+    <a href="#gsheets">GSheets</a>
+    <a href="#segments">Segments</a>
+    <a href="#amazon">Use Case</a>
+    <a href="#summary">Summary</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">📊 Lecture 8 · CRM Analytics</div>
+      <h1>From Raw Transactions<br>to a Marketing Strategy</h1>
+      <p>You have 2,000 customers and a Rs. 50,000 budget. You can't reach everyone — so you use RFM to find exactly who's worth targeting.</p>
+    </div>
+    <div class="hero-stat">
+      <div class="num">2,013</div>
+      <div class="lbl">unique customers</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<!-- Setting the Scene -->
+<section id="scene">
+  <h2>Setting the Scene</h2>
+  <div class="context-box">
+    <h3>🎯 The Business Problem</h3>
+    <p>The marketing lead drops by: <em>"We've got a Rs. 50,000 budget for this quarter's campaign. We have over 2,000 customers — that budget doesn't stretch to everyone. So who do we actually spend it on?"</em><br><br>
+    Blasting the same offer to every customer wastes budget on people who were never going to buy anyway, and under-serves customers who are about to walk away. The answer: <strong>customer segmentation using RFM</strong> — grouping customers purely by how valuable and at-risk they each are, from nothing but the transaction data already in the database.</p>
+  </div>
+  <div class="takeaway">
+    <h4>🔄 Flip of Last Lecture</h4>
+    <p>Guesstimates taught you to build a number from nothing. CRM Analytics does the opposite: you have thousands of real transactions and the job is to turn them into a marketing strategy.</p>
+  </div>
+</section>
+
+<!-- CRM -->
+<section id="crm">
+  <h2>What is CRM?</h2>
+  <p class="section-intro">Customer Relationship Management combines practices, strategies, and technologies that companies use to manage and analyze customer interactions throughout the customer lifecycle.</p>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/928/original/ChatGPT_Image_Sep_23__2026__04_00_41_PM.png?1790159448" alt="CRM Overview">
+
+  <div class="pillar-grid" style="margin-top:24px;">
+    <div class="pillar">
+      <div class="pillar-icon" style="background:#EEF2FF;">🔍</div>
+      <h4>Insight into Behaviour</h4>
+      <p>Understand how customers actually interact with your product — not just who they are on paper.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon" style="background:#ECFDF5;">🎯</div>
+      <h4>Retarget & Optimise</h4>
+      <p>Analyse habits to retarget existing customers and optimize sales from your current base.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon" style="background:#FFF7ED;">📣</div>
+      <h4>Audience Campaigns</h4>
+      <p>Find audiences with certain behaviours and organise campaigns suited to that specific group.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon" style="background:#F5F3FF;">📈</div>
+      <h4>Profitability</h4>
+      <p>Improve profitability, productivity, and efficiency by spending budget where it has the most impact.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Customer Segmentation -->
+<section id="segmentation">
+  <h2>Customer Segmentation</h2>
+  <p class="section-intro">Segmenting customers helps you focus marketing efforts so you can increase profits and customer satisfaction. Four main lenses are commonly used:</p>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/933/original/ChatGPT_Image_Sep_23__2026__04_03_32_PM.png?1790159620" alt="Customer Segmentation Types">
+
+  <div class="seg-grid" style="margin-top:24px;">
+    <div class="seg-card" style="background:#EEF2FF; border-color:#C7D2FE;">
+      <h4 style="color:#4338CA;">👤 Demographic</h4>
+      <p style="color:#3730A3;">Age, gender, income, education level, marital status, occupation.</p>
+    </div>
+    <div class="seg-card" style="background:#F5F3FF; border-color:#DDD6FE;">
+      <h4 style="color:#6D28D9;">🧠 Psychographic</h4>
+      <p style="color:#5B21B6;">Personality, lifestyle, social status, interests, values, beliefs.</p>
+    </div>
+    <div class="seg-card" style="background:#ECFDF5; border-color:#A7F3D0;">
+      <h4 style="color:#065F46;">🌍 Geographic</h4>
+      <p style="color:#047857;">Country, region, city, climate, urban vs. rural, population density.</p>
+    </div>
+    <div class="seg-card" style="background:#FFFBEB; border-color:#FDE68A;">
+      <h4 style="color:#92400E;">🛒 Behavioral ← RFM lives here</h4>
+      <p style="color:#78350F;">Purchase frequency, order value, category, channel, brand loyalty. This is the lens RFM targets directly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RFM -->
+<section id="rfm">
+  <h2>RFM Framework</h2>
+  <p class="section-intro">RFM derives customer value entirely from transaction history — no survey needed. It captures the three dimensions that best predict future buying behaviour:</p>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/935/original/ChatGPT_Image_Sep_23__2026__04_04_36_PM.png?1790159684" alt="RFM Three Dimensions">
+
+  <div class="rfm-trio">
+    <div class="rfm-cell" style="background:#EEF2FF;">
+      <div class="rfm-letter" style="color:#6366F1;">R</div>
+      <h3>Recency</h3>
+      <p>How recently did the customer make a purchase? Measured in days, weeks or months depending on your purchase cycle.</p>
+      <span class="rfm-arrow" style="background:#C7D2FE; color:#4338CA;">Lower = Better</span>
+    </div>
+    <div class="rfm-cell" style="background:#ECFDF5;">
+      <div class="rfm-letter" style="color:#10B981;">F</div>
+      <h3>Frequency</h3>
+      <p>How often does the customer purchase, typically over the 12 months leading up to their last purchase?</p>
+      <span class="rfm-arrow" style="background:#A7F3D0; color:#065F46;">Higher = Better</span>
+    </div>
+    <div class="rfm-cell" style="background:#FFFBEB;">
+      <div class="rfm-letter" style="color:#F59E0B;">M</div>
+      <h3>Monetary</h3>
+      <p>How much money does the customer spend? Either total or average over the same 12-month window.</p>
+      <span class="rfm-arrow" style="background:#FDE68A; color:#92400E;">Higher = Better</span>
+    </div>
+  </div>
+
+  <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+    <a class="viz-link" href="https://dsml-vizs.vercel.app/pa-9/rfm-three-dimensions-explained/" target="_blank">🔗 Explore: RFM 3D Visualiser</a>
+  </div>
+
+  <div class="quiz-wrap" style="margin-top:32px;">
+    <div class="quiz-question">Q1 · Why does RFM use Recency, Frequency and Monetary value — rather than, say, age or location — to judge customer value?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q1')"><span class="opt-key">A</span> Because age and location are impossible to collect</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, true, 'q1')"><span class="opt-key">B</span> Because R, F and M are all derived purely from a customer's own transaction history, so they directly measure buying behaviour rather than who the customer is</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q1')"><span class="opt-key">C</span> Because RFM is required by law for e-commerce companies</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q1')"><span class="opt-key">D</span> Because Recency, Frequency and Monetary are always equally weighted in every business</div>
+    </div>
+    <div class="quiz-explanation" id="q1-exp">
+      <strong>✓ Correct!</strong> Demographic traits like age or location describe WHO a customer is — they don't tell you whether that customer is currently engaged. R, F and M are computed straight from the transaction log itself — no survey needed — and together they capture exactly the behaviour that predicts future value: did they buy recently, do they buy often, and do they spend a lot when they do?
+    </div>
+  </div>
+</section>
+
+<!-- Google Sheets -->
+<section id="gsheets">
+  <h2>Hands-On: Google Sheets RFM Pipeline</h2>
+  <p class="section-intro">Building RFM by hand across 27,000+ orders, collapsed to 2,013 unique customers using pivot tables and percentile scoring.</p>
+  <p style="font-size:13px;color:var(--text-2);margin-bottom:22px;">📄 <a href="https://docs.google.com/spreadsheets/d/1PTbPPvsxsbhRTFnmKoAisFqvQmjVw9AX/edit?usp=sharing" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;">Class dataset (Google Sheets)</a> — follow along on the same order-level data used in class.</p>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num">1</div>
+      <h4>Reference Date</h4>
+      <p>MAX of all invoice dates</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">2</div>
+      <h4>Recency Value</h4>
+      <p>Reference – last purchase</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">3</div>
+      <h4>Frequency Value</h4>
+      <p>COUNTIF of customer ID</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">4</div>
+      <h4>Monetary Value</h4>
+      <p>SUMIF of customer spend</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">5</div>
+      <h4>Pivot to Customer</h4>
+      <p>2,013 unique customers</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">6</div>
+      <h4>Score 1–3</h4>
+      <p>PERCENTILE.EXC at 33% & 66%</p>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;">
+    <h3>The RFM Formulas</h3>
+    <div class="formula-block">
+<span class="formula-comment">-- Step 1: Anchor the analysis to the most recent order date</span>
+<span class="formula-key">Reference Date  </span>=<span class="formula-fn">MAX</span>(<span class="formula-str">'Class Data'!$C2:$C27373</span>)
+
+<span class="formula-comment">-- Step 2–4: Compute R, F, M at order level</span>
+<span class="formula-key">Recency_value   </span>=H2-G2   <span class="formula-comment">// days since last purchase</span>
+<span class="formula-key">Frequency_value </span>=<span class="formula-fn">COUNTIF</span>(<span class="formula-str">$F$2:$F$27373</span>, F2)
+<span class="formula-key">Monetary_value  </span>=<span class="formula-fn">SUMIF</span>(<span class="formula-str">$F$2:$F$27373</span>, F2, <span class="formula-str">$E$2:$E$27373</span>)
+
+<span class="formula-comment">-- Step 5: Percentile cut-offs — one pair per metric (33rd / 66th)</span>
+<span class="formula-key">Recency   </span>=<span class="formula-fn">PERCENTILE.EXC</span>(C3:C2013, <span class="formula-num">0.33</span>) → K5    =<span class="formula-fn">PERCENTILE.EXC</span>(C3:C2013, <span class="formula-num">0.66</span>) → K6
+<span class="formula-key">Frequency </span>=<span class="formula-fn">PERCENTILE.EXC</span>(D3:D2013, <span class="formula-num">0.33</span>) → K12   =<span class="formula-fn">PERCENTILE.EXC</span>(D3:D2013, <span class="formula-num">0.66</span>) → K13
+<span class="formula-key">Monetary  </span>=<span class="formula-fn">PERCENTILE.EXC</span>(E3:E2013, <span class="formula-num">0.33</span>) → K19   =<span class="formula-fn">PERCENTILE.EXC</span>(E3:E2013, <span class="formula-num">0.66</span>) → K20
+
+<span class="formula-comment">-- Scoring: Recency is INVERTED (lower days = better = score 3)</span>
+<span class="formula-key">Recency Score   </span>=<span class="formula-fn">IF</span>(C3&lt;=$K$5, <span class="formula-num">3</span>, <span class="formula-fn">IF</span>(C3>$K$6, <span class="formula-num">1</span>, <span class="formula-num">2</span>))
+<span class="formula-key">Frequency Score </span>=<span class="formula-fn">IF</span>(D3&lt;=$K$12, <span class="formula-num">1</span>, <span class="formula-fn">IF</span>(D3>$K$13, <span class="formula-num">3</span>, <span class="formula-num">2</span>))
+<span class="formula-key">Monetary Score  </span>=<span class="formula-fn">IF</span>(E3&lt;=$K$19, <span class="formula-num">1</span>, <span class="formula-fn">IF</span>(E3>$K$20, <span class="formula-num">3</span>, <span class="formula-num">2</span>))
+<span class="formula-key">RFM Score       </span>=<span class="formula-fn">CONCATENATE</span>(F3,G3,H3)
+    </div>
+  </div>
+
+  <div style="margin-top:32px;">
+    <h3>The Actual Cut-Offs from the Class Data</h3>
+    <p class="section-intro">Those percentile formulas return these thresholds. Roughly a third of the 2,013 customers lands in each band — and notice Recency runs the opposite way to the other two.</p>
+    <div class="seg-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Lowest third of values</th><th>Middle third</th><th>Highest third</th><th>Direction</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Recency</strong><br><span style="font-size:12px;color:var(--text-2);">days since last order</span></td>
+            <td>&lt; 49 days → <strong>score 3</strong></td>
+            <td>50–259 days → <strong>score 2</strong></td>
+            <td>&gt; 259 days → <strong>score 1</strong></td>
+            <td><span class="direction-badge dir-bad">Inverted — lower is better</span></td>
+          </tr>
+          <tr>
+            <td><strong>Frequency</strong><br><span style="font-size:12px;color:var(--text-2);">number of orders</span></td>
+            <td>2 orders → <strong>score 1</strong></td>
+            <td>3–9 orders → <strong>score 2</strong></td>
+            <td>&gt; 9 orders → <strong>score 3</strong></td>
+            <td><span class="direction-badge dir-good">Normal — higher is better</span></td>
+          </tr>
+          <tr>
+            <td><strong>Monetary</strong><br><span style="font-size:12px;color:var(--text-2);">total spend</span></td>
+            <td>≈ $3K → <strong>score 1</strong></td>
+            <td>$3K–$17K → <strong>score 2</strong></td>
+            <td>&gt; $17K → <strong>score 3</strong></td>
+            <td><span class="direction-badge dir-good">Normal — higher is better</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="takeaway" style="margin-top:20px;">
+    <h4>⚠️ The Recency Inversion</h4>
+    <p>For Recency, LOW values are BETTER (fewer days since last purchase = more recent). This means the scoring formula runs in the <em>opposite</em> direction from Frequency and Monetary. Miss this inversion and every customer segment downstream comes out backwards.</p>
+  </div>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/948/original/ChatGPT_Image_Sep_23__2026__04_27_54_PM.png?1790161084" alt="RFM Scoring Direction">
+
+  <div class="quiz-wrap" style="margin-top:32px;">
+    <div class="quiz-question">Q2 · A customer has an RFM score of "313" (Recency=3, Frequency=1, Monetary=3). What does this tell you about them?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q2')"><span class="opt-key">A</span> They buy often but haven't purchased in a long time and spend little</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, true, 'q2')"><span class="opt-key">B</span> They purchased very recently and spend a lot, but haven't bought often</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q2')"><span class="opt-key">C</span> They are an average customer across all three dimensions</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q2')"><span class="opt-key">D</span> The score is invalid because Recency and Monetary can't both be high</div>
+    </div>
+    <div class="quiz-explanation" id="q2-exp">
+      <strong>✓ Correct!</strong> Recency=3 means they bought very recently (best score). Frequency=1 means low order count — they haven't purchased often. Monetary=3 means they've spent a lot. Put together: a recent, high-spending customer with only a few orders. That could be a new customer who started big, or an occasional buyer who just came back — RFM alone can't tell which, because it doesn't capture when the customer first purchased.
+    </div>
+  </div>
+</section>
+
+<!-- Customer Segments -->
+<section id="segments">
+  <h2>Customer Segments & Profiles</h2>
+  <p class="section-intro">With 3 bands per metric there are 27 possible RFM scores (25 of them actually appear in the class data), and these collapse into 9 named segments. The R×F grid drives the segment assignment; Monetary helps prioritise within a segment.</p>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/957/original/ChatGPT_Image_Sep_23__2026__04_38_23_PM.png?1790161749" alt="Customer Segments Overview">
+
+  <div class="seg-table-wrap" style="margin-top:24px;">
+    <table>
+      <thead>
+        <tr>
+          <th>RFM Score</th>
+          <th>Count</th>
+          <th>Customer Profile</th>
+          <th>Signal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>331–333</td><td>430</td><td><span class="seg-badge" style="background:#EEF2FF;color:#4338CA;">🏆 Champions</span></td><td>Recent, frequent, high-spend — the most valuable group</td></tr>
+        <tr><td>232, 233</td><td>167</td><td><span class="seg-badge" style="background:#ECFDF5;color:#065F46;">💚 Loyal Customers</span></td><td>Buy frequently, relatively recent</td></tr>
+        <tr><td>321, 322, 323</td><td>181</td><td><span class="seg-badge" style="background:#DBEAFE;color:#1D4ED8;">🌱 Potential Loyalists</span></td><td>Recent buyers, not yet frequent</td></tr>
+        <tr><td>221, 222, 223</td><td>263</td><td><span class="seg-badge" style="background:#FFF7ED;color:#C2410C;">⚠️ Need Attention</span></td><td>Middle of the RF grid — at risk of sliding</td></tr>
+        <tr><td>211, 212, 213</td><td>219</td><td><span class="seg-badge" style="background:#F5F3FF;color:#6D28D9;">🌤 Promising</span></td><td>Moderate recency, low frequency</td></tr>
+        <tr><td>133, 132</td><td>47</td><td><span class="seg-badge" style="background:#FEF2F2;color:#991B1B;">🚨 Can't Lose Them</span></td><td>High F & M, but long time since last purchase</td></tr>
+        <tr><td>121–123</td><td>200</td><td><span class="seg-badge" style="background:#FEF2F2;color:#B45309;">😴 Hibernating / At Risk</span></td><td>Moderate frequency, low recency</td></tr>
+        <tr><td>111–113</td><td>429</td><td><span class="seg-badge" style="background:#F1F5F9;color:#475569;">💤 About to Sleep</span></td><td>Bought long ago and rarely — the largest and coldest group</td></tr>
+        <tr><td>311–313</td><td>75</td><td><span class="seg-badge" style="background:#FFF7ED;color:#9A3412;">🆕 Price Sensitive / New</span></td><td>Very recent but only 1–2 purchases</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="quiz-wrap" style="margin-top:32px;">
+    <div class="quiz-question">Q3 · A customer has RFM score 133 (Recency=1, Frequency=3, Monetary=3). Which segment are they in, and why?</div>
+    <div class="quiz-options">
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q3')"><span class="opt-key">A</span> Champions — because Monetary is at its highest</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, true, 'q3')"><span class="opt-key">B</span> Can't Lose Them — high F and M (they used to shop a lot), but the lowest Recency means it's been 259+ days since their last purchase</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q3')"><span class="opt-key">C</span> About to Sleep — because Recency is at its lowest</div>
+      <div class="quiz-opt" onclick="handleQuiz(this, false, 'q3')"><span class="opt-key">D</span> Promising — because Frequency is high</div>
+    </div>
+    <div class="quiz-explanation" id="q3-exp">
+      <strong>✓ Correct!</strong> Frequency=3 and Monetary=3 mean this customer shops very often and spends a lot — a genuinely high-value customer. But Recency=1 means it's been a very long time (259+ days) since their last purchase. That combination — valuable customer going quiet — is exactly "Can't Lose Them": someone the business must not let slip away.
+    </div>
+  </div>
+</section>
+
+<!-- Amazon Use Case -->
+<section id="amazon">
+  <h2>Use Case: RFM at Amazon</h2>
+  <p class="section-intro">By applying RFM segments, Amazon tailors marketing intensity across five tiers — from VIP treatment at the top to re-engagement at the bottom — to maximise customer lifetime value across its entire base:</p>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/959/original/ChatGPT_Image_Sep_23__2026__04_42_09_PM.png?1790161951" alt="Amazon RFM Use Case">
+
+  <div class="amazon-grid" style="margin-top:24px;">
+    <div class="amazon-card" style="background:#EEF2FF; border-color:#C7D2FE;">
+      <h4 style="color:#4338CA;">🏆 High RFM — VIP Treatment</h4>
+      <ul>
+        <li>Personalised product recommendations from purchase/browsing history</li>
+        <li>Early access to new product releases and limited-time items</li>
+        <li>Invite to Amazon Prime with extra benefits (faster shipping, exclusive content)</li>
+      </ul>
+    </div>
+    <div class="amazon-card" style="background:#ECFDF5; border-color:#A7F3D0;">
+      <h4 style="color:#065F46;">💚 Moderate-High — Nurture</h4>
+      <ul>
+        <li>Tailored recommendations, but fewer promotional emails</li>
+        <li>Loyalty rewards — gift cards, discounts — for continued engagement</li>
+        <li>Early access to some deals to maintain interest</li>
+      </ul>
+    </div>
+    <div class="amazon-card" style="background:#FFFBEB; border-color:#FDE68A;">
+      <h4 style="color:#92400E;">⚠️ Moderate — Encourage</h4>
+      <ul>
+        <li>Product bundles/kits to encourage additional purchases</li>
+        <li>Time-limited promotions ("spend X, get Y")</li>
+        <li>Re-engagement emails reminding of past shopping experiences</li>
+      </ul>
+    </div>
+    <div class="amazon-card" style="background:#FFF7ED; border-color:#FED7AA;">
+      <h4 style="color:#C2410C;">📉 Moderate-Low — Win-Back</h4>
+      <ul>
+        <li>At risk of going inactive — win-back emails with attractive discounts or special offers</li>
+        <li>Abandoned cart reminders to prompt them to complete the purchase</li>
+        <li>Personalised suggestions from categories they have shown interest in before</li>
+      </ul>
+    </div>
+    <div class="amazon-card" style="background:#FEF2F2; border-color:#FECACA;">
+      <h4 style="color:#991B1B;">🚨 Low RFM — Re-Engage</h4>
+      <ul>
+        <li>The hardest group, but still has potential</li>
+        <li>Customer surveys to gather feedback on their experience, then feed that back into better suggestions</li>
+        <li>Compelling promotions to entice a return — a next-purchase discount or free shipping above a minimum order</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="context-box" style="margin-top:28px;">
+    <h3>💡 Back to Aditi's Rs. 50,000 Problem</h3>
+    <p>Instead of splitting the budget evenly across 2,000+ customers: spend the bulk on <strong>Champions</strong> (highest value) and <strong>"Can't lose them"</strong> (high value, high risk of churn), a moderate amount on <strong>Potential Loyalists and New customers</strong>, and cheap, automated win-back emails on the <strong>Hibernating / At Risk and About to sleep</strong> groups. Same budget — dramatically more return — because the spend now follows the segment.</p>
+  </div>
+</section>
+
+<!-- Summary -->
+<section id="summary">
+  <h2>Today's Journey</h2>
+  <p class="section-intro">From a flat list of 27,000+ orders to a Rs. 50,000 budget spent with purpose:</p>
+
+  <img class="section-img" src="https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/241/962/original/ChatGPT_Image_Sep_23__2026__04_45_38_PM.png?1790162180" alt="CRM Analytics Summary">
+
+  <div class="summary-grid" style="margin-top:28px;">
+    <div class="summary-card">
+      <div class="s-num">01</div>
+      <h4>CRM & Segmentation</h4>
+      <p>What CRM is and the four lenses for segmenting customers (demographic, psychographic, geographic, behavioral).</p>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">02</div>
+      <h4>RFM Framework</h4>
+      <p>Recency (lower better), Frequency (higher better), Monetary (higher better) — all derived from transaction data alone.</p>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">03</div>
+      <h4>Sheets Pipeline</h4>
+      <p>Reference date → R/F/M values → Pivot to customer level → PERCENTILE.EXC cut-offs → 1–3 scoring.</p>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">04</div>
+      <h4>Recency Inversion</h4>
+      <p>Recency scores are inverted: lower days = score 3 (best). Miss this and every segment downstream is wrong.</p>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">05</div>
+      <h4>9 Segments</h4>
+      <p>Champions, Loyal, Potential Loyalists, Need Attention, Promising, Can't Lose Them, Hibernating, About to Sleep, New/Price Sensitive.</p>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">06</div>
+      <h4>Budget Strategy</h4>
+      <p>Amazon shows how RFM intensity guides spend: VIP treatment for high-RFM, win-back automation for low-RFM.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+  // Nav active state
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => obs.observe(s));
+
+  // Quiz handler
+  function handleQuiz(el, isCorrect, qId) {
+    const container = el.closest('.quiz-options');
+    if (container.dataset.answered) return;
+    container.dataset.answered = '1';
+    const opts = container.querySelectorAll('.quiz-opt');
+    opts.forEach(o => {
+      const fn = o.onclick?.toString() || '';
+      if (fn.includes('true')) o.classList.add('correct');
+      else if (o === el && !isCorrect) o.classList.add('wrong');
+      o.style.pointerEvents = 'none';
+    });
+    const exp = document.getElementById(qId + '-exp');
+    if (exp) exp.classList.add('show');
+  }
+</script>
+</body>
+</html>
+
+</body></html>
